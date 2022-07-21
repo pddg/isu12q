@@ -1,0 +1,10 @@
+---
+- hosts: db
+  roles:
+    - name: slowquery
+      vars:
+        slowquery_database_type: mysql
+        slowquery_db_user: isucon
+        slowquery_db_password: "isucon"
+        slowquery_threshold: "0.01"
+        slowquery_enable: yes

@@ -1,0 +1,4 @@
+---
+- hosts: all
+  roles:
+    - name: before_bench

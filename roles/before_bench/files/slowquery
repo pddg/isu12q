@@ -1,0 +1,12 @@
+/tmp/slow_query.log {
+    daily
+    missingok
+    rotate 10
+    notifempty
+    nocompress
+    sharedscript
+    postrotate
+        mysqladmin flush-logs
+    endscript
+    su mysql mysql
+}

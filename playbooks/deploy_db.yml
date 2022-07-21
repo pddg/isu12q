@@ -1,0 +1,13 @@
+---
+- hosts: db
+  roles:
+    - name: deploy_configs
+      vars:
+        deploy_config_files:
+          - /etc/mysql/mysql.conf.d/mysqld.cnf
+          - /etc/mysql/mysql.cnf
+
+    - name: restart_service
+      vars:
+        restart_services:
+          - name: mysql

@@ -1,0 +1,6 @@
+---
+app_name: isucari
+app_unit_name: "{{ app_name }}.go"
+app_unit_default: "{{ app_name }}.go"
+
+deploy_app_dir: "/home/isucon/{{ app_name }}/webapp"

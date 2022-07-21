@@ -1,0 +1,14 @@
+---
+- hosts: nginx
+  roles:
+    - name: backup_files
+      vars:
+        backup_dirs:
+          - path: /var/log/nginx
+            name: nginx_log
+- hosts: db
+  roles:
+    - name: backup_files
+      vars:
+        backup_files:
+          - /tmp/slow_query.log

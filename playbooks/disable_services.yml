@@ -1,0 +1,4 @@
+---
+- hosts: all
+  roles:
+    - name: disable_service
