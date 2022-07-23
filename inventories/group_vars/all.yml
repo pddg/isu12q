@@ -1,6 +1,6 @@
 ---
-app_name: isucari
-app_unit_name: "{{ app_name }}.go"
-app_unit_default: "{{ app_name }}.go"
+app_name: isuports
+app_unit_name: "{{ app_name }}"
+app_unit_default: "{{ app_name }}"
 
-deploy_app_dir: "/home/isucon/{{ app_name }}/webapp"
+deploy_app_dir: "/home/isucon/webapp"
