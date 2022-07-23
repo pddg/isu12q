@@ -809,28 +809,31 @@ func playersAddHandler(c echo.Context) error {
 
 	// TODO: Bulk insert
 	pds := make([]PlayerDetail, 0, len(displayNames))
+	now := time.Now().Unix()
+	newPlayers := make([]PlayerRow, 0, len(displayNames))
 	for _, displayName := range displayNames {
 		id, err := dispenseID(ctx)
 		if err != nil {
 			return fmt.Errorf("error dispenseID: %w", err)
 		}
 
-		now := time.Now().Unix()
-		if _, err := tenantDB.ExecContext(
-			ctx,
-			"INSERT INTO player (id, tenant_id, display_name, is_disqualified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-			id, v.tenantID, displayName, false, now, now,
-		); err != nil {
-			return fmt.Errorf(
-				"error Insert player at tenantDB: id=%s, displayName=%s, isDisqualified=%t, createdAt=%d, updatedAt=%d, %w",
-				id, displayName, false, now, now, err,
-			)
-		}
+		newPlayers = append(newPlayers, PlayerRow{
+			TenantID:       v.tenantID,
+			ID:             id,
+			DisplayName:    displayName,
+			IsDisqualified: false,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		})
 		pds = append(pds, PlayerDetail{
 			ID:             id,
 			DisplayName:    displayName,
 			IsDisqualified: false,
 		})
+	}
+	query := "INSERT INTO player (tenant_id, id, display_name, is_disqualified, created_at, updated_at) VALUES (:tenant_id, :id, :display_name, :is_disqualified, :created_at, :updated_at)"
+	if _, err := tenantDB.NamedExecContext(ctx, query, newPlayers); err != nil {
+		return err
 	}
 
 	res := PlayersAddHandlerResult{
