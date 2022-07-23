@@ -22,7 +22,6 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/gofrs/flock"
 	"github.com/jmoiron/sqlx"
-	"github.com/labstack/echo-contrib/pprof"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -137,7 +136,6 @@ func withTx(ctx context.Context, tenantDB *sqlx.DB, action func(tx *sqlx.Tx) err
 // Run は cmd/isuports/main.go から呼ばれるエントリーポイントです
 func Run() {
 	e := echo.New()
-	pprof.Register(e)
 	e.Debug = false
 	e.Logger.SetLevel(log.OFF)
 
