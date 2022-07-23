@@ -10,4 +10,6 @@ __pycache__/
 .vagrant/
 .DS_Store
 
+/initial_data
+
 /TARGET
