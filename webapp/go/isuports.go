@@ -1271,7 +1271,6 @@ func playerHandler(c echo.Context) error {
 	for _, c := range cs {
 		competitionIDs = append(competitionIDs, c.ID)
 	}
-	// これを入れると整合性チェックで `GET /api/admin/tenants/billing` が落ちる
 	rawQuery := "SELECT p1.* FROM player_score as p1 INNER JOIN (SELECT id, player_id, competition_id, MAX(row_num) AS max_row_num FROM player_score GROUP BY player_id, competition_id) AS p2 ON p1.id = p2.id AND p1.row_num = p2.max_row_num WHERE p1.tenant_id = ? AND p1.player_id = ? AND p1.competition_id = (?)"
 	query, args, err := sqlx.In(rawQuery, v.tenantID, playerID, competitionIDs)
 	if err != nil {
