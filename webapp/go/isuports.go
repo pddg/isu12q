@@ -40,6 +40,8 @@ const (
 	RoleOrganizer = "organizer"
 	RolePlayer    = "player"
 	RoleNone      = "none"
+
+	pemKeySrc = "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnBHNAPVGsGozQRc1oqP8\n/+pMgmDoLOw3Y561wYBnQ5+odh7YzQwk7bTNwKJM2mEngp86d9/nEz0PSBd+PksO\nEEPFy7ki/Qbxrc3HUqvshS9hY+EBcfSkq6wb2aPS9gQb/ayqE3V9wbf36Mn2E/4U\nTN2DyHYK1JuECVRDCH1z5BU+v4jxmV1RMddaZvjiUF8PifdkceSi8xA8KeDVVg/T\nYAqRo9+cEEFmV7Yi9ov+BdMTaCC5JY2U2enl4aaE9ebjthEwGKS8KClXpCnHK4mN\niAByANWypdKupDll58djdHT6OXkGoTgDa/jK19PjLh+GRVqlvjA04PVGhoOIUeOM\nxwIDAQAB\n-----END PUBLIC KEY-----"
 )
 
 var (
@@ -179,11 +181,7 @@ func Run() {
 	defer adminDB.Close()
 
 	// public.pemを初期化時に読んでおく
-	keyFilename := getEnv("ISUCON_JWT_KEY_FILE", "../public.pem")
-	keysrc, err := os.ReadFile(keyFilename)
-	if err != nil {
-		e.Logger.Fatalf("failed to read %s: %v", keyFilename, err)
-	}
+	keysrc := []byte(pemKeySrc)
 	key, _, err := jwk.DecodePEM(keysrc)
 	if err != nil {
 		e.Logger.Fatalf("error jwk.DecodePEM: %w", err)
