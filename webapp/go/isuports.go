@@ -419,9 +419,10 @@ type PlayerScoreRow struct {
 	PlayerID      string `db:"player_id"`
 	CompetitionID string `db:"competition_id"`
 	Score         int64  `db:"score"`
-	RowNum        int64  `db:"row_num"`
-	CreatedAt     int64  `db:"created_at"`
-	UpdatedAt     int64  `db:"updated_at"`
+	// note: いらないけどdbからの読み取り時の都合で残す - shanpu
+	RowNum    int64 `db:"row_num"`
+	CreatedAt int64 `db:"created_at"`
+	UpdatedAt int64 `db:"updated_at"`
 }
 
 // 排他ロックのためのファイル名を生成する
@@ -1065,10 +1066,8 @@ func competitionScoreHandler(c echo.Context) error {
 		return fmt.Errorf("error flockByTenantID: %w", err)
 	}
 	defer fl.Close()
-	var rowNum int64
 	playerScoreRows := []PlayerScoreRow{}
 	for {
-		rowNum++
 		row, err := r.Read()
 		if err != nil {
 			if err == io.EOF {
@@ -1097,18 +1096,13 @@ func competitionScoreHandler(c echo.Context) error {
 				fmt.Sprintf("error strconv.ParseUint: scoreStr=%s, %s", scoreStr, err),
 			)
 		}
-		id, err := dispenseID(ctx)
-		if err != nil {
-			return fmt.Errorf("error dispenseID: %w", err)
-		}
 		now := time.Now().Unix()
 		playerScoreRows = append(playerScoreRows, PlayerScoreRow{
-			ID:            id,
+			ID:            playerID,
 			TenantID:      v.tenantID,
 			PlayerID:      playerID,
 			CompetitionID: competitionID,
 			Score:         score,
-			RowNum:        rowNum,
 			CreatedAt:     now,
 			UpdatedAt:     now,
 		})
@@ -1125,12 +1119,12 @@ func competitionScoreHandler(c echo.Context) error {
 	for _, ps := range playerScoreRows {
 		if _, err := tenantDB.NamedExecContext(
 			ctx,
-			"INSERT INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES (:id, :tenant_id, :player_id, :competition_id, :score, :row_num, :created_at, :updated_at)",
+			"INSERT OR REPLACE INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES (:id, :tenant_id, :player_id, :competition_id, :score, 0, :created_at, :updated_at)",
 			ps,
 		); err != nil {
 			return fmt.Errorf(
-				"error Insert player_score: id=%s, tenant_id=%d, playerID=%s, competitionID=%s, score=%d, rowNum=%d, createdAt=%d, updatedAt=%d, %w",
-				ps.ID, ps.TenantID, ps.PlayerID, ps.CompetitionID, ps.Score, ps.RowNum, ps.CreatedAt, ps.UpdatedAt, err,
+				"error Insert player_score: id=%s, tenant_id=%d, playerID=%s, competitionID=%s, score=%d, createdAt=%d, updatedAt=%d, %w",
+				ps.ID, ps.TenantID, ps.PlayerID, ps.CompetitionID, ps.Score, ps.CreatedAt, ps.UpdatedAt, err,
 			)
 
 		}
@@ -1260,7 +1254,8 @@ func playerHandler(c echo.Context) error {
 			ctx,
 			&ps,
 			// 最後にCSVに登場したスコアを採用する = row_numが一番大きいもの
-			"SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? AND player_id = ? ORDER BY row_num DESC LIMIT 1",
+			// note: row_numは消した - shanpu
+			"SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? AND player_id = ? LIMIT 1",
 			v.tenantID,
 			c.ID,
 			p.ID,
@@ -1305,7 +1300,6 @@ type CompetitionRank struct {
 	Score             int64  `json:"score"`
 	PlayerID          string `json:"player_id"`
 	PlayerDisplayName string `json:"player_display_name"`
-	RowNum            int64  `json:"-"` // APIレスポンスのJSONには含まれない
 }
 
 type CompetitionRankingHandlerResult struct {
@@ -1385,7 +1379,7 @@ func competitionRankingHandler(c echo.Context) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&pss,
-		"SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? ORDER BY row_num DESC",
+		"SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ?",
 		tenant.ID,
 		competitionID,
 	); err != nil {
@@ -1411,6 +1405,7 @@ func competitionRankingHandler(c echo.Context) error {
 	for _, ps := range pss {
 		// player_scoreが同一player_id内ではrow_numの降順でソートされているので
 		// 現れたのが2回目以降のplayer_idはより大きいrow_numでスコアが出ているとみなせる
+		// note: row_num消したから今はもういらないけど一応残す - shanpu
 		if _, ok := scoredPlayerSet[ps.PlayerID]; ok {
 			continue
 		}
@@ -1423,13 +1418,9 @@ func competitionRankingHandler(c echo.Context) error {
 			Score:             ps.Score,
 			PlayerID:          p.ID,
 			PlayerDisplayName: p.DisplayName,
-			RowNum:            ps.RowNum,
 		})
 	}
 	sort.Slice(ranks, func(i, j int) bool {
-		if ranks[i].Score == ranks[j].Score {
-			return ranks[i].RowNum < ranks[j].RowNum
-		}
 		return ranks[i].Score > ranks[j].Score
 	})
 	pagedRanks := make([]CompetitionRank, 0, 100)
