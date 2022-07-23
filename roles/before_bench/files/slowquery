@@ -4,7 +4,7 @@
     rotate 10
     notifempty
     nocompress
-    sharedscript
+    sharedscripts
     postrotate
         mysqladmin flush-logs
     endscript
