@@ -5,6 +5,7 @@
       vars:
         deploy_config_files:
           - /etc/nginx/nginx.conf
+          - /etc/nginx/sites-available/isuports.conf
 
     - name: restart_service
       vars:
