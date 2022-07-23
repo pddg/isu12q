@@ -14,6 +14,6 @@ Environment=MYSQL_PASS=isucon
 Type=simple
 User=isucon
 Group=isucon
-WorkingDirectory=/home/isucon/webapp
+WorkingDirectory=/home/isucon/webapp/go
 ExecStart=/home/isucon/webapp/go/isuports
 Restart=always
