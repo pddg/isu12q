@@ -118,6 +118,22 @@ func SetCacheControlPrivate(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func withTx(ctx context.Context, tenantDB *sqlx.DB, action func(tx *sqlx.Tx) error) error {
+	tx, err := tenantDB.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := action(tx); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return err
+	}
+	return nil
+}
+
 // Run は cmd/isuports/main.go から呼ばれるエントリーポイントです
 func Run() {
 	e := echo.New()
@@ -844,8 +860,13 @@ func playersAddHandler(c echo.Context) error {
 			IsDisqualified: false,
 		})
 	}
-	query := "INSERT INTO player (tenant_id, id, display_name, is_disqualified, created_at, updated_at) VALUES (:tenant_id, :id, :display_name, :is_disqualified, :created_at, :updated_at)"
-	if _, err := tenantDB.NamedExecContext(ctx, query, newPlayers); err != nil {
+	if err := withTx(c.Request().Context(), tenantDB, func(tx *sqlx.Tx) error {
+		query := "INSERT INTO player (tenant_id, id, display_name, is_disqualified, created_at, updated_at) VALUES (:tenant_id, :id, :display_name, :is_disqualified, :created_at, :updated_at)"
+		if _, err := tx.NamedExecContext(ctx, query, newPlayers); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 
@@ -944,15 +965,20 @@ func competitionsAddHandler(c echo.Context) error {
 	if err != nil {
 		return fmt.Errorf("error dispenseID: %w", err)
 	}
-	if _, err := tenantDB.ExecContext(
-		ctx,
-		"INSERT INTO competition (id, tenant_id, title, finished_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-		id, v.tenantID, title, sql.NullInt64{}, now, now,
-	); err != nil {
-		return fmt.Errorf(
-			"error Insert competition: id=%s, tenant_id=%d, title=%s, finishedAt=null, createdAt=%d, updatedAt=%d, %w",
-			id, v.tenantID, title, now, now, err,
-		)
+	if err := withTx(ctx, tenantDB, func(tx *sqlx.Tx) error {
+		if _, err := tx.ExecContext(
+			ctx,
+			"INSERT INTO competition (id, tenant_id, title, finished_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+			id, v.tenantID, title, sql.NullInt64{}, now, now,
+		); err != nil {
+			return fmt.Errorf(
+				"error Insert competition: id=%s, tenant_id=%d, title=%s, finishedAt=null, createdAt=%d, updatedAt=%d, %w",
+				id, v.tenantID, title, now, now, err,
+			)
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	res := CompetitionsAddHandlerResult{
@@ -1073,11 +1099,6 @@ func competitionScoreHandler(c echo.Context) error {
 	}
 
 	// / DELETEしたタイミングで参照が来ると空っぽのランキングになるのでロックする
-	fl, err := flockByTenantID(v.tenantID)
-	if err != nil {
-		return fmt.Errorf("error flockByTenantID: %w", err)
-	}
-	defer fl.Close()
 	var rowNum int64
 	playerScoreRows := []PlayerScoreRow{}
 	for {
@@ -1127,26 +1148,30 @@ func competitionScoreHandler(c echo.Context) error {
 		})
 	}
 
-	if _, err := tenantDB.ExecContext(
-		ctx,
-		"DELETE FROM player_score WHERE tenant_id = ? AND competition_id = ?",
-		v.tenantID,
-		competitionID,
-	); err != nil {
-		return fmt.Errorf("error Delete player_score: tenantID=%d, competitionID=%s, %w", v.tenantID, competitionID, err)
-	}
-	for _, ps := range playerScoreRows {
-		if _, err := tenantDB.NamedExecContext(
+	if err := withTx(c.Request().Context(), tenantDB, func(tx *sqlx.Tx) error {
+		if _, err := tx.ExecContext(
 			ctx,
-			"INSERT INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES (:id, :tenant_id, :player_id, :competition_id, :score, :row_num, :created_at, :updated_at)",
-			ps,
+			"DELETE FROM player_score WHERE tenant_id = ? AND competition_id = ?",
+			v.tenantID,
+			competitionID,
 		); err != nil {
-			return fmt.Errorf(
-				"error Insert player_score: id=%s, tenant_id=%d, playerID=%s, competitionID=%s, score=%d, rowNum=%d, createdAt=%d, updatedAt=%d, %w",
-				ps.ID, ps.TenantID, ps.PlayerID, ps.CompetitionID, ps.Score, ps.RowNum, ps.CreatedAt, ps.UpdatedAt, err,
-			)
-
+			return fmt.Errorf("error Delete player_score: tenantID=%d, competitionID=%s, %w", v.tenantID, competitionID, err)
 		}
+		for _, ps := range playerScoreRows {
+			if _, err := tx.NamedExecContext(
+				ctx,
+				"INSERT INTO player_score (id, tenant_id, player_id, competition_id, score, row_num, created_at, updated_at) VALUES (:id, :tenant_id, :player_id, :competition_id, :score, :row_num, :created_at, :updated_at)",
+				ps,
+			); err != nil {
+				return fmt.Errorf(
+					"error Insert player_score: id=%s, tenant_id=%d, playerID=%s, competitionID=%s, score=%d, rowNum=%d, createdAt=%d, updatedAt=%d, %w",
+					ps.ID, ps.TenantID, ps.PlayerID, ps.CompetitionID, ps.Score, ps.RowNum, ps.CreatedAt, ps.UpdatedAt, err,
+				)
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
 	}
 
 	return c.JSON(http.StatusOK, SuccessResult{
