@@ -798,10 +798,13 @@ func playersListHandler(c echo.Context) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&pls,
-		"SELECT * FROM player ORDER BY created_at DESC",
+		"SELECT * FROM player",
 	); err != nil {
 		return fmt.Errorf("error Select player: %w", err)
 	}
+	sort.Slice(pls, func(i, j int) bool {
+		return pls[i].CreatedAt > pls[j].CreatedAt
+	})
 	var pds []PlayerDetail
 	for _, p := range pls {
 		pds = append(pds, PlayerDetail{
@@ -1215,10 +1218,13 @@ func billingHandler(c echo.Context) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&cs,
-		"SELECT * FROM competition ORDER BY created_at DESC",
+		"SELECT * FROM competition",
 	); err != nil {
 		return fmt.Errorf("error Select competition: %w", err)
 	}
+	sort.Slice(cs, func(i, j int) bool {
+		return cs[i].CreatedAt > cs[j].CreatedAt
+	})
 	tbrs := make([]BillingReport, 0, len(cs))
 	for _, comp := range cs {
 		report, err := billingReportByCompetition(ctx, tenantDB, v.tenantID, comp.ID)
@@ -1286,10 +1292,13 @@ func playerHandler(c echo.Context) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&cs,
-		"SELECT * FROM competition ORDER BY created_at ASC",
+		"SELECT * FROM competition",
 	); err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("error Select competition: %w", err)
 	}
+	sort.Slice(cs, func(i, j int) bool {
+		return cs[i].CreatedAt < cs[j].CreatedAt
+	})
 
 	// player_scoreを読んでいるときに更新が走ると不整合が起こるのでロックを取得する
 	fl, err := flockByTenantID(v.tenantID)
@@ -1302,7 +1311,7 @@ func playerHandler(c echo.Context) error {
 	for _, c := range cs {
 		competitionIDs = append(competitionIDs, c.ID)
 	}
-	rawQuery := "SELECT * FROM player_score WHERE player_id = ? AND competition_id in (?) ORDER BY competition_id"
+	rawQuery := "SELECT * FROM player_score WHERE player_id = ? AND competition_id in (?)"
 	query, args, err := sqlx.In(rawQuery, playerID, competitionIDs)
 	if err != nil {
 		return fmt.Errorf("error sqlx.In: %w", err)
@@ -1310,6 +1319,9 @@ func playerHandler(c echo.Context) error {
 	if err := tenantDB.SelectContext(ctx, &allPss, query, args...); err != nil {
 		return fmt.Errorf("error Select player_score: %w", err)
 	}
+	sort.Slice(allPss, func(i, j int) bool {
+		return allPss[i].CompetitionID < allPss[j].CompetitionID
+	})
 	pssByCompID := map[string]PlayerScoreRow{}
 	for i := range allPss {
 		ps1 := allPss[i]
@@ -1580,11 +1592,14 @@ func competitionsHandler(c echo.Context, v *Viewer, tenantDB dbOrTx) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&cs,
-		"SELECT * FROM competition ORDER BY created_at DESC",
+		"SELECT * FROM competition",
 	); err != nil {
 		return fmt.Errorf("error Select competition: %w", err)
 	}
 	cds := make([]CompetitionDetail, 0, len(cs))
+	sort.Slice(cs, func(i, j int) bool {
+		return cs[i].CreatedAt > cs[j].CreatedAt
+	})
 	for _, comp := range cs {
 		cds = append(cds, CompetitionDetail{
 			ID:         comp.ID,
