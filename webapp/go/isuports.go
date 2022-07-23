@@ -1394,7 +1394,6 @@ func competitionRankingHandler(c echo.Context) error {
 	ranks := make([]CompetitionRank, 0, len(pss))
 	scoredPlayerSet := make(map[string]struct{}, len(pss))
 
-	// TODO: 使ってないけど落ちる
 	playerIDs := make([]string, 0, len(pss))
 	for _, ps := range pss {
 		playerIDs = append(playerIDs, ps.PlayerID)
