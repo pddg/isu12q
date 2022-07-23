@@ -2,10 +2,10 @@
 - name: Source files are deployed
   synchronize:
     src: "../webapp"
-    dest: "{{ deploy_app_dir }}"
+    dest: "{{ deploy_app_dir }}/../"
     compress: yes
     archive: no
-    delete: yes
+    delete: no
     recursive: yes
     mode: push
     rsync_opts:
@@ -26,14 +26,14 @@
 #  become_user: isucon
 #  become: yes
 
-- name: App binary is built
-  command: "/home/isucon/local/go/bin/go build -o {{ app_name }}"
-  args:
-    chdir: "{{ deploy_app_dir }}/go"
-  environment:
-    GOOS: "linux"
-    GOARCH: "amd64"
-    CGO_ENBALED: "0"
+#- name: App binary is built
+#  command: "/home/isucon/local/go/bin/go build -o {{ app_name }}"
+#  args:
+#    chdir: "{{ deploy_app_dir }}/go"
+#  environment:
+#    GOOS: "linux"
+#    GOARCH: "amd64"
+#    CGO_ENBALED: "0"
 
 - name: Restart webapp
   systemd:
