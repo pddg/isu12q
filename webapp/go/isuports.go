@@ -1291,28 +1291,33 @@ func playerHandler(c echo.Context) error {
 		return fmt.Errorf("error flockByTenantID: %w", err)
 	}
 	defer fl.Close()
-	pss := make([]PlayerScoreRow, 0, len(cs))
+	var allPss []PlayerScoreRow
 	competitionIDs := make([]string, 0, len(cs))
-	// TODO: fix N+1
 	for _, c := range cs {
-		ps := PlayerScoreRow{}
-		if err := tenantDB.GetContext(
-			ctx,
-			&ps,
-			// 最後にCSVに登場したスコアを採用する = row_numが一番大きいもの
-			"SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? AND player_id = ? ORDER BY row_num DESC LIMIT 1",
-			v.tenantID,
-			c.ID,
-			p.ID,
-		); err != nil {
-			// 行がない = スコアが記録されてない
-			if errors.Is(err, sql.ErrNoRows) {
-				continue
-			}
-			return fmt.Errorf("error Select player_score: tenantID=%d, competitionID=%s, playerID=%s, %w", v.tenantID, c.ID, p.ID, err)
-		}
-		pss = append(pss, ps)
 		competitionIDs = append(competitionIDs, c.ID)
+	}
+	rawQuery := "SELECT * FROM player_score WHERE tenant_id = ? AND player_id = ? AND competition_id in (?) ORDER BY competition_id, row_num DESC"
+	query, args, err := sqlx.In(rawQuery, v.tenantID, playerID, competitionIDs)
+	if err != nil {
+		return fmt.Errorf("error sqlx.In: %w", err)
+	}
+	if err := tenantDB.SelectContext(ctx, &allPss, query, args...); err != nil {
+		return fmt.Errorf("error Select player_score: %w", err)
+	}
+	pssByCompID := map[string]PlayerScoreRow{}
+	for i := range allPss {
+		ps1 := allPss[i]
+		if ps2, ok := pssByCompID[ps1.CompetitionID]; ok {
+			if ps1.RowNum > ps2.RowNum {
+				pssByCompID[ps1.CompetitionID] = ps1
+			}
+		} else {
+			pssByCompID[ps1.CompetitionID] = ps1
+		}
+	}
+	pss := make([]PlayerScoreRow, 0, len(cs))
+	for _, ps := range pssByCompID {
+		pss = append(pss, ps)
 	}
 
 	comps, err := batchRetrieveCompetitions(ctx, tenantDB, competitionIDs)
