@@ -1580,7 +1580,7 @@ func competitionsHandler(c echo.Context, v *Viewer, tenantDB dbOrTx) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&cs,
-		"SELECT * FROM competition",
+		"SELECT id title finished_at created_at FROM competition",
 	); err != nil {
 		return fmt.Errorf("error Select competition: %w", err)
 	}
