@@ -197,19 +197,14 @@ func Run() {
 	defer adminDB.Close()
 
 	// Wait connection
-	var pingErr error
 	for {
-		pingErr = adminDB.Ping()
-		if pingErr != nil {
+		if err := adminDB.Ping(); err != nil {
 			e.Logger.Warnf("ping failed: %s\n", err)
 		} else {
 			e.Logger.Infof("connected to db")
 			break
 		}
-		time.Sleep(2 * time.Second)
-	}
-	if pingErr != nil {
-		e.Logger.Fatalf("failed to connect RDB: %v", err)
+		time.Sleep(1 * time.Second)
 	}
 
 	// public.pemを初期化時に読んでおく
