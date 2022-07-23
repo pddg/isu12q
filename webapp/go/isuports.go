@@ -138,8 +138,8 @@ func withTx(ctx context.Context, tenantDB *sqlx.DB, action func(tx *sqlx.Tx) err
 func Run() {
 	e := echo.New()
 	pprof.Register(e)
-	e.Debug = true
-	e.Logger.SetLevel(log.DEBUG)
+	e.Debug = false
+	e.Logger.SetLevel(log.OFF)
 
 	var (
 		sqlLogger io.Closer
