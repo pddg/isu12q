@@ -4,7 +4,6 @@
     - name: deploy_configs
       vars:
         deploy_config_files:
-#          - /etc/nginx/sites-available/isucari.conf
           - /etc/nginx/nginx.conf
 
     - name: restart_service

@@ -11,7 +11,8 @@
     value: "FILE"
     login_user: "{{ slowquery_db_user | default(omit) }}"
     login_password: "{{ slowquery_db_password | default(omit) }}"
-    login_unix_socket: "{{ slowquery_unix_socket }}"
+    login_host: localhost
+    login_port: 3306
 
 - block:
 
@@ -22,6 +23,8 @@
         login_user: "{{ slowquery_db_user | default(omit) }}"
         login_password: "{{ slowquery_db_password | default(omit) }}"
         login_unix_socket: "{{ slowquery_unix_socket }}"
+        login_host: localhost
+        login_port: 3306
 
     - name: Set slow query file
       mysql_variables:
@@ -29,7 +32,8 @@
         value: "{{ slowquery_log_file }}"
         login_user: "{{ slowquery_db_user | default(omit) }}"
         login_password: "{{ slowquery_db_password | default(omit) }}"
-        login_unix_socket: "{{ slowquery_unix_socket }}"
+        login_host: localhost
+        login_port: 3306
 
     - name: Set slow query threshold
       mysql_variables:
@@ -37,7 +41,8 @@
         value: "{{ slowquery_threshold }}"
         login_user: "{{ slowquery_db_user | default(omit) }}"
         login_password: "{{ slowquery_db_password | default(omit) }}"
-        login_unix_socket: "{{ slowquery_unix_socket }}"
+        login_host: localhost
+        login_port: 3306
 
   when: slowquery_enable
 
@@ -49,6 +54,7 @@
         value: "OFF"
         login_user: "{{ slowquery_db_user | default(omit) }}"
         login_password: "{{ slowquery_db_password | default(omit) }}"
-        login_unix_socket: "{{ slowquery_unix_socket }}"
+        login_host: localhost
+        login_port: 3306
 
   when: not slowquery_enable

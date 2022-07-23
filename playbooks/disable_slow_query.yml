@@ -4,6 +4,6 @@
     - name: slowquery
       vars:
         slowquery_database_type: mysql
-        slowquery_db_user: isucon
-        slowquery_db_password: isucon
+        slowquery_db_user: root
+        slowquery_db_password: "root"
         slowquery_enable: no
