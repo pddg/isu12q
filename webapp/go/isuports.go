@@ -198,7 +198,7 @@ func Run() {
 
 	// Wait connection
 	var pingErr error
-	for i := 0; i < 3; i++ {
+	for {
 		pingErr = adminDB.Ping()
 		if pingErr != nil {
 			e.Logger.Warnf("ping failed: %s\n", err)
