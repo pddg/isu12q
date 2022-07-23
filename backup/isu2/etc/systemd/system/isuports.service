@@ -6,10 +6,14 @@ After=network.target
 WantedBy=multi-user.target
 
 [Service]
+Environment=MYSQL_HOST="localhost"
+Environment=MYSQL_PORT=3306
+Environment=MYSQL_USER=isucon
+Environment=MYSQL_DBNAME=isuports
+Environment=MYSQL_PASS=isucon
 Type=simple
 User=isucon
 Group=isucon
 WorkingDirectory=/home/isucon/webapp
-ExecStart=docker compose -f docker-compose-go.yml up --build
-ExecStop=docker compose -f docker-compose-go.yml down
+ExecStart=/home/isucon/webapp/go/isuports
 Restart=always
