@@ -2,10 +2,10 @@
 - name: Source files are deployed
   synchronize:
     src: "../webapp"
-    dest: "{{ deploy_app_dir }}"
+    dest: "{{ deploy_app_dir }}/../"
     compress: yes
     archive: no
-    delete: yes
+    delete: no
     recursive: yes
     mode: push
     rsync_opts:
