@@ -531,6 +531,17 @@ func billingReportByCompetition(ctx context.Context, tenantDB dbOrTx, tenantID i
 	if err != nil {
 		return nil, fmt.Errorf("error retrieveCompetition: %w", err)
 	}
+	if !comp.FinishedAt.Valid {
+		return &BillingReport{
+			CompetitionID:     comp.ID,
+			CompetitionTitle:  comp.Title,
+			PlayerCount:       0,
+			VisitorCount:      0,
+			BillingPlayerYen:  0, // スコアを登録した参加者は100円
+			BillingVisitorYen: 0, // ランキングを閲覧だけした(スコアを登録していない)参加者は10円
+			BillingYen:        0,
+		}, err
+	}
 
 	// ランキングにアクセスした参加者のIDを取得する
 	vhs := []VisitHistorySummaryRow{}
@@ -553,6 +564,7 @@ func billingReportByCompetition(ctx context.Context, tenantDB dbOrTx, tenantID i
 	}
 
 	// player_scoreを読んでいるときに更新が走ると不整合が起こるのでロックを取得する
+	// todo このロック気になる - shanpu
 	fl, err := flockByTenantID(tenantID)
 	if err != nil {
 		return nil, fmt.Errorf("error flockByTenantID: %w", err)
@@ -666,6 +678,7 @@ func tenantsBillingHandler(c echo.Context) error {
 			}
 			defer tenantDB.Close()
 			cs := []CompetitionRow{}
+			// todo ここn+1 - shanpu
 			if err := tenantDB.SelectContext(
 				ctx,
 				&cs,
