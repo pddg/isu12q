@@ -6,7 +6,6 @@
       become: yes
       apt:
         name:
-          - python-pip
           - python3-pip
         cache_valid_time: 3600
     - name: Install percona-toolkit
