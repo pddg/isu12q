@@ -799,11 +799,14 @@ func playersListHandler(c echo.Context) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&pls,
-		"SELECT * FROM player WHERE tenant_id=? ORDER BY created_at DESC",
+		"SELECT * FROM player WHERE tenant_id=?",
 		v.tenantID,
 	); err != nil {
 		return fmt.Errorf("error Select player: %w", err)
 	}
+	sort.Slice(pls, func(i, j int) bool {
+		return pls[i].CreatedAt > pls[j].CreatedAt
+	})
 	var pds []PlayerDetail
 	for _, p := range pls {
 		pds = append(pds, PlayerDetail{
@@ -1218,11 +1221,14 @@ func billingHandler(c echo.Context) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&cs,
-		"SELECT * FROM competition WHERE tenant_id=? ORDER BY created_at DESC",
+		"SELECT * FROM competition WHERE tenant_id=?",
 		v.tenantID,
 	); err != nil {
 		return fmt.Errorf("error Select competition: %w", err)
 	}
+	sort.Slice(cs, func(i, j int) bool {
+		return cs[i].CreatedAt > cs[j].CreatedAt
+	})
 	tbrs := make([]BillingReport, 0, len(cs))
 	for _, comp := range cs {
 		report, err := billingReportByCompetition(ctx, tenantDB, v.tenantID, comp.ID)
@@ -1586,12 +1592,15 @@ func competitionsHandler(c echo.Context, v *Viewer, tenantDB dbOrTx) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&cs,
-		"SELECT * FROM competition WHERE tenant_id=? ORDER BY created_at DESC",
+		"SELECT * FROM competition WHERE tenant_id=?",
 		v.tenantID,
 	); err != nil {
 		return fmt.Errorf("error Select competition: %w", err)
 	}
 	cds := make([]CompetitionDetail, 0, len(cs))
+	sort.Slice(cs, func(i, j int) bool {
+		return cs[i].CreatedAt > cs[j].CreatedAt
+	})
 	for _, comp := range cs {
 		cds = append(cds, CompetitionDetail{
 			ID:         comp.ID,
