@@ -5,8 +5,9 @@
     notifempty
     nocompress
     sharedscripts
+    create mysql mysql
     postrotate
-        mysqladmin flush-logs
+        mysql -uroot -proot -e 'flush slow logs'
     endscript
     su mysql mysql
 }
