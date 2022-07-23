@@ -6,11 +6,11 @@ After=network.target
 WantedBy=multi-user.target
 
 [Service]
-Environment=MYSQL_HOST="localhost"
-Environment=MYSQL_PORT=3306
-Environment=MYSQL_USER=isucon
-Environment=MYSQL_DBNAME=isuports
-Environment=MYSQL_PASS=isucon
+Environment=ISUCON_DB_HOST="192.168.0.13"
+Environment=ISUCON_DB_PORT=3306
+Environment=ISUCON_DB_USER=isucon
+Environment=ISUCON_DB_NAME=isuports
+Environment=ISUCON_DB_PASSWORD=isucon
 Type=simple
 User=isucon
 Group=isucon
