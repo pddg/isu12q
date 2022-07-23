@@ -18,26 +18,11 @@
       - --exclude=public/
   become: no
 
-# - name: Bundle install
-#  bundler:
-#    state: present
-#    chdir: "{{ deploy_app_rb_root | default(deploy_app_dir + '/ruby') }}"
-#    executable: "/home/isucon/local/ruby/bin/bundler"
-#  become_user: isucon
-#  become: yes
-
-#- name: App binary is built
-#  command: "/home/isucon/local/go/bin/go build -o {{ app_name }}"
-#  args:
-#    chdir: "{{ deploy_app_dir }}/go"
-#  environment:
-#    GOOS: "linux"
-#    GOARCH: "amd64"
-#    CGO_ENBALED: "0"
-
-- name: Restart webapp
-  systemd:
-    name: "{{ app_unit_name }}"
-    enabled: yes
-    state: restarted
-  become: yes
+- name: App binary is built
+  command: "/home/isucon/local/go/bin/go build -o {{ app_name }} ./cmd/{{ app_name }}/main.go"
+  args:
+    chdir: "{{ deploy_app_dir }}/go"
+  environment:
+    GOOS: "linux"
+    GOARCH: "amd64"
+    CGO_ENBALED: "0"

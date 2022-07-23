@@ -2,6 +2,9 @@
 - hosts: web
   roles:
     - name: deploy_configs
+      vars:
+        deploy_config_files:
+          - /etc/systemd/system/isuports.service
     - name: deploy_webapp
     - name: restart_service
       vars:
