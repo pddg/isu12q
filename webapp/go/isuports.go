@@ -1296,7 +1296,7 @@ func playerHandler(c echo.Context) error {
 	for _, c := range cs {
 		competitionIDs = append(competitionIDs, c.ID)
 	}
-	rawQuery := "SELECT * FROM player_score WHERE tenant_id = ? AND player_id = ? AND competition_id in (?) ORDER BY competition_id, row_num DESC"
+	rawQuery := "SELECT * FROM player_score WHERE tenant_id = ? AND player_id = ? AND competition_id in (?) ORDER BY competition_id"
 	query, args, err := sqlx.In(rawQuery, v.tenantID, playerID, competitionIDs)
 	if err != nil {
 		return fmt.Errorf("error sqlx.In: %w", err)
@@ -1440,7 +1440,7 @@ func competitionRankingHandler(c echo.Context) error {
 	if err := tenantDB.SelectContext(
 		ctx,
 		&pss,
-		"SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ? ORDER BY row_num DESC",
+		"SELECT * FROM player_score WHERE tenant_id = ? AND competition_id = ?",
 		tenant.ID,
 		competitionID,
 	); err != nil {
